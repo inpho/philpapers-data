@@ -2,6 +2,18 @@ import argparse
 from glob import iglob as glob
 import json
 import os.path
+import tarfile
+
+def create_sample(data_path, N=20):
+    tar = tarfile.open("sample.tar", "w")
+    data_path = os.path.join(data_path, '*.json')
+    for i,filename in enumerate(glob(data_path)):
+        tar.add(filename, arcname=os.path.basename(filename))
+        if i > N:
+            break
+    tar.close()
+    
+
 
 def print_titles(data_path):
     ''' Takes a Philpapers data path, iterates through all JSON records in that
@@ -37,4 +49,6 @@ if __name__ == '__main__':
     print args.categories
 
     # TODO: Create print_filtered_categories function
-    print_filtered_categories(args.data_path, args.categories)
+    #print_filtered_categories(args.data_path, args.categories)
+
+    create_sample(args.data_path, 20)
