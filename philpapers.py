@@ -1,3 +1,4 @@
+import argparse
 from glob import iglob as glob
 import json
 import os.path
@@ -13,14 +14,27 @@ def print_titles(data_path):
             record = json.load(jsonfile)
             print record['title']
 
+def valid_dir(path):
+    ''' helper function for argparse module '''
+    if not os.path.isdir(path):
+        msg = "%r is not a valid directory" & path
+        raise argparse.ArgumentTypeError(msg)
+    return path
 
 if __name__ == '__main__':
     import sys
+    parser = argparse.ArgumentParser(description='Process PhilPapers Data Files')
+    parser.add_argument('data_path', type=valid_dir, default=None)
+    parser.add_argument('-c', dest='categories', nargs='*', type=str)
+    args = parser.parse_args()
 
     # if a data path is manually specified, use it
-    if sys.argv[-1] != 'philpapers.py':
-        philpapers_data_path = sys.argv[-1]
-    else:
+    if args.data_path is None:
         # if not go with the inpho config file defaults
         data_path = config.get('general', 'data_path')
         philpapers_data_path = os.path.join(data_path, 'philpapers')
+
+    print args.categories
+
+    # TODO: Create print_filtered_categories function
+    print_filtered_categories(args.data_path, args.categories)
