@@ -78,6 +78,7 @@ class fileExplorer:
             if (file.endswith(".json")):
                 temp = open(file)
                 document = json.load(temp)
+                temp.close() # CLOSE THE FILE!!!!
                 document["_id"] = document.get("id")
                 db.save(document)
 
