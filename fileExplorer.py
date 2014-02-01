@@ -16,16 +16,23 @@ class fileExplorer:
     def getFileFolder(self):
         global fileFolder
         fileFolder = raw_input("Enter file folder path: ")
-        return fileFolder
+        if fileFolder == "":
+            return self.getFileFolder()
+        else:
+            return fileFolder
 
     def printFiles(self, filePath): #TEST METHOD
-        x = 0
-        for file in os.listdir(filePath): #Lists names of items in directory - does not give actual items
-            x += 1
-        y = 0
+        os.chdir(filePath)
+        files = glob("*.*") #Lists names of items in directory - does not give actual items
+        for file in files:
+            print file
+
+        print "\nMade it...\n"
+
         for file in os.listdir(filePath):
-            y += 1
-            print "\rStatus __________ %d" %(y/x * 100) + "%",
+            print file
+#            y += 1
+#            print "\rStatus __________ %d" %(y/x * 100) + "%",
 
         print ("\n")
 
@@ -34,13 +41,21 @@ class fileExplorer:
         print "Wait...\n...\n..."
 
         x = 0
-        for file in glob(path):
-            x += 1
+        os.chdir(path)
+        for file in glob("*.*"):
+            if file.endswith(".docx"):
+                print file
+                x += 1
+
+        print "\n" + str(x) + "\n"
 
 #        dbLocation = raw_input("Enter CouchDB Location: ")
         couch = couchdb.Server()
         
-        print "Connected to local database."
+        print "Connected to local database.\n"
+        response = raw_input("Continue? <y/n> ")
+        if response != "y":
+            return
 
         database = raw_input("Enter Database: ")
         if database in couch: #Checks if entered db exists on server
@@ -50,23 +65,26 @@ class fileExplorer:
 
         print database + " database opened.\n"
 
-	#CHECK IF READY TO CONTINUE
-	response = raw_input("Continue <y/n> ")
-	if response == "y":
-	        print "\nAdding files to " + database + "\n"
-		# Add json files to couchDB db
-	        y = 0
-	        for file in glob(path):
-	            # Load file as json, add _id element, add file to couchdb
-	            if (file.endswith(".json")):
-	                document = json.load(file)
-	                document["_id"] = document.get("id")
-	                db.save(document)
+        #CHECK IF READY TO CONTINUE
+        response = raw_input("Continue <y/n> ")
+        if response != "y":
+            return;
 
-	            y += 1
-	            print "\r Status ___________ %d" %(y/x * 100) + "%",
-        
-	        print "\n"
+        print "\nAdding files to " + database + "\n"
+        # Add json files to couchDB db
+        y = 0
+        for file in glob("*.*"):
+            # Load file as json, add _id element, add file to couchdb
+            if (file.endswith(".json")):
+                temp = open(file)
+                document = json.load(temp)
+                document["_id"] = document.get("id")
+                db.save(document)
+
+            y += 1
+            print "\r Status ___________ %d" %(y/x * 100) + "%",
+    
+        print "\n"
 
 
     def sayHi(self):    #Test Method
@@ -75,7 +93,7 @@ class fileExplorer:
     @staticmethod   # Test Method: Static Method
     def sayHey():
         print "Hey"
-
+        
     @staticmethod
     def testProgress():
         x = 0
