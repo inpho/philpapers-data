@@ -3,7 +3,7 @@ import sys
 import couchdb
 from couchdb import *
 import json
-from glob import iglob as glob
+from glob import iglob
 
 #import webbrowser
 #import Tkinter, tkFileDialog as tk
@@ -16,46 +16,52 @@ class fileExplorer:
     def getFileFolder(self):
         global fileFolder
         fileFolder = raw_input("Enter file folder path: ")
-        if fileFolder == "":
-            return self.getFileFolder()
-        else:
-            return fileFolder
+	if fileFolder == "":
+		return self.getFileFolder()
+	else:
+        	return fileFolder
 
     def printFiles(self, filePath): #TEST METHOD
-        os.chdir(filePath)
-        files = glob("*.*") #Lists names of items in directory - does not give actual items
-        for file in files:
-            print file
+        x = 0
+        for file in os.listdir(filePath): #Lists names of items in directory - does not give actual items
+            x += 1
+	    print file
 
-        print "\nMade it...\n"
-
+        y = 0
         for file in os.listdir(filePath):
-            print file
-#            y += 1
-#            print "\rStatus __________ %d" %(y/x * 100) + "%",
+            y += 1
+            print "\rStatus __________ %d" %(y/x * 100) + "%",
 
         print ("\n")
+
+    def getNoJson(self, path): #Return and files that are not json files
+	x = 0
+	os.chdir(path)
+	for file in iglob("*.*"):
+		if file.endswith(".json"):
+			x += 1
+		else:
+			print file
+	print "\n" + str(x) + " files are json files"
 
     #SETUP Database - CouchDB and ADD JSON FILES TO COUCH 
     def setupDB(self, path):
         print "Wait...\n...\n..."
 
+	os.chdir(path) #MAKE 'path' CURRENT WORKING DIRECTORY
         x = 0
-        os.chdir(path)
-        for file in glob("*.*"):
-            if file.endswith(".docx"):
-                print file
-                x += 1
-
-        print "\n" + str(x) + "\n"
+        for file in iglob("*.*"):
+            x += 1
+	
+	print "\nItems in directory: " + str(x) + "\n"
 
 #        dbLocation = raw_input("Enter CouchDB Location: ")
         couch = couchdb.Server()
         
-        print "Connected to local database.\n"
-        response = raw_input("Continue? <y/n> ")
-        if response != "y":
-            return
+        print "Connected to local database."
+	response = raw_input("Continue <y/n> ")
+	if response == "n":
+		return;
 
         database = raw_input("Enter Database: ")
         if database in couch: #Checks if entered db exists on server
@@ -65,27 +71,25 @@ class fileExplorer:
 
         print database + " database opened.\n"
 
-        #CHECK IF READY TO CONTINUE
-        response = raw_input("Continue <y/n> ")
-        if response != "y":
-            return;
+	#CHECK IF READY TO CONTINUE
+	response = raw_input("Continue <y/n> ")
+	if response == "y":
+	        print "\nAdding files to " + database + "\n"
+		# Add json files to couchDB db
+	        y = 0
+	        for file in iglob("*.*"):
+	            # Load file as json, add _id element, add file to couchdb
+	            if (file.endswith(".json")):
+	                temp = open(file)
+			document = json.load(temp)
+			temp.close() #CLOSE TEMPORARY FILE!!!
+	                document["_id"] = document.get("id")
+	                db.save(document)
 
-        print "\nAdding files to " + database + "\n"
-        # Add json files to couchDB db
-        y = 0
-        for file in glob("*.*"):
-            # Load file as json, add _id element, add file to couchdb
-            if (file.endswith(".json")):
-                temp = open(file)
-                document = json.load(temp)
-                temp.close() # CLOSE THE FILE!!!!
-                document["_id"] = document.get("id")
-                db.save(document)
-
-            y += 1
-            print "\r Status ___________ %d" %(y/x * 100) + "%",
-    
-        print "\n"
+	            y += 1
+	            print "\r Status ___________ %d" %(y/x * 100) + "%",
+        
+	        print "\n"
 
 
     def sayHi(self):    #Test Method
@@ -94,7 +98,7 @@ class fileExplorer:
     @staticmethod   # Test Method: Static Method
     def sayHey():
         print "Hey"
-        
+
     @staticmethod
     def testProgress():
         x = 0
@@ -104,8 +108,7 @@ class fileExplorer:
             x += 1
 
 def main():
-    print "Hello. Prepare to move jSON files from one directory to a couchDB database!"
-    print "..."
+    print "\nHello. Prepare to move jSON files from one directory to a couchDB database!"
     print "...\n"
 
     fileEx = fileExplorer()
@@ -113,9 +116,11 @@ def main():
 
 #    fileEx.printFiles(data_path)
 
-    fileEx.setupDB(data_path)
+#    fileEx.setupDB(data_path)
 
 #    fileExplorer.testProgress()
+
+    fileEx.getNoJson(data_path)
 
     print "Complete."
 
