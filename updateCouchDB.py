@@ -34,8 +34,14 @@ def updateDB():
         
         #Create '_id' field and set it equal to 'id' field in json document
         document["_id"] = document.get("id")
+        document["testerspace"] = "WAZZUP"
         #Add document to specified CouchDB db
-        _id, _rev = db.save(document)
+        if document["_id"] not in db:
+            _id, _rev = db.save(document)
+        else:
+            del db[document.get("id")]
+            db.save(document)
+            _id = document.get("id")
         print "Document %s added succesfully" %_id
 
 #   Useful for parsing through JSON docs
