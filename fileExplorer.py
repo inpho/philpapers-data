@@ -14,9 +14,9 @@ import datetime
 #import Tkinter, tkFileDialog as tk
 
 class fileExplorer:
-#    Class that represents a file folder
+#    Class that represents a file folder containing JSON documents
 
-    fileFolder = "empty"
+    fileFolder = "empty" #Path of file folder
 
     #Obtain path to folder in which .json documents are located
     def getFileFolder(self):
@@ -85,20 +85,22 @@ class fileExplorer:
                 # Load file as json, add _id element, add file to couchdb
                 with open(file) as temp: #File is automatically CLOSED with 'with'
                     document = json.load(temp)
-                    id = document.get("id")
+                    id = document.get("id") 
+                    document["_id"] = id #Set Document _id field
                     if id in db: # Check if file is already in database
                         if lastSync < datetime.datetime.fromtimestamp(os.path.getmtime(file)):
-                            del db[id] # Delete existing doc in database
-                            document["_id"] = id # Make sure '_id' field exists within document
+#                            del db[id] # Delete existing doc in database
+                            document["_rev"] = db[document["_id"]].get("_rev") # Pull _rev from existing doc on db and add it to updated doc to avoid conflict error
                             db.save(document) # Add updated doc to database with same id
                     else:
-                        document["_id"] = id
                         db.save(document)
                     
                 y += 1
                 print "\r Status ___________ %f" %(y/x * 100) + "%",
         
             print "\n"
+
+            db.commit() # Ensure changes are physically stored
 
             self.updateLastSync(path) # UPDATE TIME OF LAST SYNC
 
@@ -149,7 +151,7 @@ def main():
     data_path = fileEx.getFileFolder()
 
 #    fileEx.printFiles(data_path)
-#    fileEx.setupDB(data_path)
+    fileEx.setupDB(data_path)
 #    fileExplorer.testProgress()
 #    fileEx.getNoJson(data_path)
 
