@@ -9,9 +9,15 @@ from couchdb import *
 import json
 from glob import iglob
 import datetime
+import argparse
 
 #import webbrowser
 #import Tkinter, tkFileDialog as tk
+
+parser = argparse.ArgumentParser(description="Transfer and/or update files from select directory into select CouchDB database.")
+parser.add_argument("-e", "--explicit", action="store_true", help="Use to explicity choose directory and database")
+parser.add_argument("-a", "--auto", action="store_true", help="Use for automated delivery of philpapers to philpapers database")
+args = parser.parse_args()
 
 class fileExplorer:
 #    Class that represents a file folder containing JSON documents
@@ -46,7 +52,13 @@ class fileExplorer:
 
     #SETUP Database - CouchDB and ADD JSON FILES TO COUCH 
     #path is file path of .json documents
-    def setupDB(self, path):
+    def setupDB(self, path, database=None):
+        auto = None
+        if database == None: # If no database value, this is explicit run
+            auto = False
+        else:
+            auto = True
+        
         print "Wait...\n...\n..."
         os.chdir(path) #MAKE 'path' CURRENT WORKING DIRECTORY
         
@@ -59,50 +71,53 @@ class fileExplorer:
         couch = couchdb.Server()
         
         print "Connected to local database."
-        response = raw_input("Continue <y/n> ")
-        if response != "y":
-            return;
+        if auto == False:
+            response = raw_input("Continue <y/n> ")
+            if response != "y":
+                return;
 
-        database = raw_input("Enter Database: ")
+        if database == None:
+            database = raw_input("Enter Database: ")
         if database in couch: #Checks if entered db exists on server
             db = couch[database]
         else:
             db = couch.create(database)
         print database + " database opened.\n"
         
-        #CHECK IF READY TO CONTINUE
-        response = raw_input("Continue <y/n> ")
-        if response != "y":
-            return
-        else:
-            print "\nAdding files to " + database + "\n"
-            # Add json files to couchDB db --------->
+        #CHECK IF READY TO CONTINUE if an explicit run
+        if auto == False:
+            response = raw_input("Continue <y/n> ")
+            if response != "y":
+                return;
 
-            #FIRST: obtain time of last update
-            lastSync = self.getLastSync(path)
-            y = 0
-            for file in iglob("*.json"): #Only worries about .json files
-                # Load file as json, add _id element, add file to couchdb
-                with open(file) as temp: #File is automatically CLOSED with 'with'
-                    document = json.load(temp)
-                    id = document.get("id") 
-                    document["_id"] = id #Set Document _id field
-                    if id in db: # Check if file is already in database
-                        if lastSync < datetime.datetime.fromtimestamp(os.path.getmtime(file)):
+        print "\nAdding files to " + database + "\n"
+        # Add json files to couchDB db --------->
+
+        #FIRST: obtain time of last update
+        lastSync = self.getLastSync(path)
+        y = 0
+        for file in iglob("*.json"): #Only worries about .json files
+            # Load file as json, add _id element, add file to couchdb
+            with open(file) as temp: #File is automatically CLOSED with 'with'
+                document = json.load(temp)
+                id = document.get("id") 
+                document["_id"] = id #Set Document _id field
+                if id in db: # Check if file is already in database
+                    if lastSync < datetime.datetime.fromtimestamp(os.path.getmtime(file)):
 #                            del db[id] # Delete existing doc in database
-                            document["_rev"] = db[document["_id"]].get("_rev") # Pull _rev from existing doc on db and add it to updated doc to avoid conflict error
-                            db.save(document) # Add updated doc to database with same id
-                    else:
-                        db.save(document)
+                        document["_rev"] = db[document["_id"]].get("_rev") # Pull _rev from existing doc on db and add it to updated doc to avoid conflict error
+                        db.save(document) # Add updated doc to database with same id
+                else:
+                    db.save(document)
                     
-                y += 1
-                print "\r Status ___________ %f" %(y/x * 100) + "%",
+            y += 1
+            print "\r Status ___________ %f" %(y/x * 100) + "%",
         
-            print "\n"
+        print "\n"
 
-            db.commit() # Ensure changes are physically stored
+        db.commit() # Ensure changes are physically stored
 
-            self.updateLastSync(path) # UPDATE TIME OF LAST SYNC
+        self.updateLastSync(path) # UPDATE TIME OF LAST SYNC
 
 
     def getNoJson(self, path): #Return any files that are not json files
@@ -128,42 +143,35 @@ class fileExplorer:
 
         print ("\n")
 
-    def sayHi(self):    #Test Method
-        print "Hi"
-    
-    @staticmethod   # Test Method: Static Method
-    def sayHey():
-        print "Hey"
 
-    @staticmethod
-    def testProgress():
-        x = 0
-        while x <= 1000:
-            y = x/1000 * 100
-            print "\r Status __________________ %d" %y + "%",
-            x += 1
+print "\nHello. Prepare to move jSON files from one directory to a couchDB database!"
+print "...\n"
 
-def main():
-    print "\nHello. Prepare to move jSON files from one directory to a couchDB database!"
-    print "...\n"
+fileEx = fileExplorer() #Create instance of fileExplorer
 
-    fileEx = fileExplorer()
+if args.explicit:
     data_path = fileEx.getFileFolder()
-
-#    fileEx.printFiles(data_path)
     fileEx.setupDB(data_path)
-#    fileExplorer.testProgress()
+
+elif args.auto:
+#    data_path = "/var/inphosemantics/data/20130522/philpapers/raw"
+    data_path = "/var/inphosemantics/data/20130522/philpapers/raw"
+    database = "philpapers"
+    fileEx.setupDB(data_path, database=database)
+	
+else:
+	print "Proper argument not given."
+
+print "Complete."
+
+
+#def main():
+#    fileEx.printFiles(data_path)
+#    fileEx.setupDB(data_path)
 #    fileEx.getNoJson(data_path)
 
-    print "Complete."
-
-
-if __name__ == "__main__":
-    main()
-
-#    folder = tk.askopenfile()
-#    print folder
-#    Tkinter._test()
+#if __name__ == "__main__":
+#    main()
 
 
 #SOURCES
