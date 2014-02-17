@@ -14,15 +14,19 @@ import argparse
 #import webbrowser
 #import Tkinter, tkFileDialog as tk
 
-parser = argparse.ArgumentParser(description="Transfer and/or update files from select directory into select CouchDB database.")
+parser = argparse.ArgumentParser(description="Transfer and/or update JSON files from select directory into select CouchDB database.")
 parser.add_argument("-e", "--explicit", action="store_true", help="Use to explicity choose directory and database")
 parser.add_argument("-a", "--auto", action="store_true", help="Use for automated delivery of philpapers to philpapers database")
+parser.add_argument("-nf", "--numFiles", action="store_true", help="Get the number of items within a specified directory")
+parser.add_argument("-nj", "--numJson", action="store_true", help="Get the number of JSON files within a specified directory")
+parser.add_argument("-pf", "--printFiles", action="store_true", help="Print the names of items within a specified directory")
+parser.add_argument("-ls", "--lastSync", action="store_true", help="Get the time when directory was last synced with database or false if none")
 args = parser.parse_args()
 
 class fileExplorer:
 #    Class that represents a file folder containing JSON documents
 
-    fileFolder = "empty" #Path of file folder
+    fileFolder = None #Path of file folder
 
     #Obtain path to folder in which .json documents are located
     def getFileFolder(self):
@@ -120,7 +124,21 @@ class fileExplorer:
         self.updateLastSync(path) # UPDATE TIME OF LAST SYNC
 
 
-    def getNoJson(self, path): #Return any files that are not json files
+
+    def getNumFiles(self, path): #Return number of files within directory
+        files = 0
+        for thing in os.listdir(path):
+            files += 1
+        return files
+
+    def getNumJson(self,path):
+        jFiles = 0
+        for file in os.listdir(path):
+            if file.endswith(".json"):
+                jFiles += 1
+        return jFiles
+
+    def getNoJson(self, path): #Print any files that are not json files and print number of json files
         x = 0
         os.chdir(path)
         for file in iglob("*.*"):
@@ -130,16 +148,16 @@ class fileExplorer:
                 print file
         print "\n" + str(x) + " files are json files"
 
-    def printFiles(self, filePath): #TEST METHOD: Print files within filePath
-        x = 0
+    def printFiles(self, filePath): #Print files within filePath
+#        x = 0
         for file in os.listdir(filePath): #Lists names of items in directory - does not give actual items
-            x += 1
+#            x += 1
             print file
 
-        y = 0
-        for file in os.listdir(filePath):
-            y += 1
-            print "\rStatus __________ %d" %(y/x * 100) + "%",
+#        y = 0
+#        for file in os.listdir(filePath):
+#            y += 1
+#            print "\rStatus __________ %d" %(y/x * 100) + "%",
 
         print ("\n")
 
@@ -158,7 +176,27 @@ elif args.auto:
     data_path = "/var/inphosemantics/data/20130522/philpapers/raw"
     database = "philpapers"
     fileEx.setupDB(data_path, database=database)
-	
+
+if args.numFiles:
+    data_path = fileEx.getFileFolder()
+    print "Files in %s: " %data_path + str(fileEx.getNumFiles(data_path))
+
+if args.numJson:
+    data_path = fileEx.getFileFolder()
+    print "JSON files in %s: " %data_path + str(fileEx.getNumJson(data_path))
+
+if args.printFiles:
+    data_path = fileEx.getFileFolder()
+    fileEx.printFiles(data_path)
+
+if args.lastSync:
+    data_path = fileEx.getFileFolder()
+    lastSync = fileEx.getLastSync(data_path)
+    if lastSync == datetime.datetime.min:
+        print "No lastSync.txt file in %s" %data_path
+    else:
+        print "%s last synced " %data_path + str(lastSync)
+
 else:
 	print "Proper argument not given."
 
