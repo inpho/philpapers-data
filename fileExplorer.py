@@ -8,10 +8,9 @@ import json
 import os
 import os.path
 import sys
-"""
+
 import couchdb
 from couchdb import *
-"""
 
 #import webbrowser
 #import Tkinter, tkFileDialog as tk
@@ -36,7 +35,8 @@ class fileExplorer:
         lastSyncFile = os.path.join(path, "lastSync.txt")
         if os.path.isfile(lastSyncFile):
             with open(lastSyncFile) as file:
-                lastSync = datetime.datetime.strptime(file.read(), "%Y-%m-%d %H:%M:%S.%f") #Read file containing string representation of last update time and convert it to timedate object
+                lastSync = datetime.datetime.strptime(file.read(), "%Y-%m-%d %H:%M:%S.%f") 
+                    #Read file containing string representation of last update time and convert it to timedate object
                 return lastSync
         else:
             return datetime.datetime.min
@@ -101,8 +101,9 @@ class fileExplorer:
                 document["_id"] = id #Set Document _id field
                 if id in db: # Check if file is already in database
                     if lastSync < datetime.datetime.fromtimestamp(os.path.getmtime(file)):
-#                            del db[id] # Delete existing doc in database
-                        document["_rev"] = db[document["_id"]].get("_rev") # Pull _rev from existing doc on db and add it to updated doc to avoid conflict error
+#                       del db[id] # Delete existing doc in database
+                        document["_rev"] = db[document["_id"]].get("_rev") # Pull _rev 
+                            #from existing doc on db and add it to updated doc to avoid conflict error
                         db.save(document) # Add updated doc to database with same id
                 else:
                     db.save(document)
@@ -116,6 +117,15 @@ class fileExplorer:
 
         self.updateLastSync(path) # UPDATE TIME OF LAST SYNC
 
+    def directoryDelve(self, path, database):
+        """Search through a given directory and all internal directories for 
+            .json documents and copy them to specified database"""
+        
+        for thing in iglob(os.path.join(path, "*")):
+            if os.path.isdir(thing):
+                self.directoryDelve(thing, database)
+
+        self.setupDB(path, database=database)
 
 
     def getNumFiles(self, path):
@@ -148,12 +158,6 @@ class fileExplorer:
 
         print ("\n")
 
-print "Complete."
-
-#def main():
-#    fileEx.printFiles(data_path)
-#    fileEx.setupDB(data_path)
-#    fileEx.getNoJson(data_path)
 
 if __name__ == "__main__":
     import argparse
@@ -165,6 +169,8 @@ if __name__ == "__main__":
         help="Use to explicity choose directory and database")
     parser.add_argument("-a", "--auto", action="store_true", 
         help="Use for automated delivery of philpapers to philpapers database")
+    parser.add_argument("-t", "--tree", action="store_true",
+        help="Use to deliver all .json files within a directory and its internal directories to a specified database")
     parser.add_argument("-nf", "--numFiles", action="store_true", 
         help="Print the number of items within a specified directory")
     parser.add_argument("-nj", "--numJson", action="store_true", 
@@ -180,16 +186,19 @@ if __name__ == "__main__":
     
     fileEx = fileExplorer() #Create instance of fileExplorer
     
-    if args.explicit:
-        data_path = fileEx.getFileFolder()
-        fileEx.setupDB(data_path)
-    
-    elif args.auto:
+    if args.auto:
         data_path = "/var/inphosemantics/data/20130522/philpapers/raw"
         database = "philpapers"
         fileEx.setupDB(data_path, database=database)
     else:
         data_path = fileEx.getFileFolder()
+
+    if args.explicit:
+        fileEx.setupDB(data_path)
+
+    if args.tree:
+        database = raw_input("Enter database to write .json files to: ")
+        fileEx.directoryDelve(data_path, database)
 
     # print the number of files
     if args.numFiles:
@@ -210,7 +219,9 @@ if __name__ == "__main__":
     
     else:
     	print "Proper argument not given."
-        
+
+    print "Complete."
+
 
 #SOURCES
 # Stack Overflow
