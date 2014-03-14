@@ -64,8 +64,15 @@ class fileExplorer:
             x += 1  
         print "\nItems in directory: " + str(x) + "\n"
 
-#        dbLocation = raw_input("Enter CouchDB Location: ")
-        couch = couchdb.Server()
+        username = raw_input("Enter username (Hit Enter if none): ")
+        password = raw_input("Enter password (Hit Enter if none): ")
+        host = raw_input("Enter host (Hit Enter if local): ")
+        if not host == "":
+            couch = couchdb.Server("http://"+username+":"+password+"@"+host+":5984")
+        if username == "" and password == "":
+            couch = couchdb.Server()
+        else:
+            couch = couchdb.Server("http://"+username+":"+password+"@127.0.0.1:5984")
         
         print "Connected to local database."
         if auto == False:
@@ -217,8 +224,8 @@ if __name__ == "__main__":
         else:
             print "%s last synced " %data_path + str(lastSync)
     
-    else:
-    	print "Proper argument not given."
+    if not len(sys.argv) > 1:
+        print "Proper argument not given."
 
     print "Complete."
 
