@@ -96,16 +96,16 @@ class fileExplorer:
             # Load file as json, add _id element, add file to couchdb
             with open(file) as temp: #File is automatically CLOSED with 'with'
                 document = json.load(temp)
-                id = document.get("id") #THIS PROGRAM ASSUMES jSON HAS id FIELD!
-                document["_id"] = id #Set Document _id field
-                if id in db: # Check if file is already in database
-                    if lastSync < datetime.datetime.fromtimestamp(os.path.getmtime(file)):
-#                       del db[id] # Delete existing doc in database
-                        document["_rev"] = db[document["_id"]].get("_rev") # Pull _rev 
-                            #from existing doc on db and add it to updated doc to avoid conflict error
-                        db.save(document) # Add updated doc to database with same id
-                else:
-                    db.save(document)
+		if document.get("id") is not None:
+                    id = document.get("id") #THIS PROGRAM ASSUMES jSON HAS id FIELD!
+                    document["_id"] = id #Set Document _id field
+                    if id in db: # Check if file is already in database
+                        if lastSync < datetime.datetime.fromtimestamp(os.path.getmtime(file)):
+    #                       del db[id] # Delete existing doc in database
+                            document["_rev"] = db[document["_id"]].get("_rev") # Pull _rev 
+                           #from existing doc on db and add it to updated doc to avoid conflict error
+
+                db.save(document)
                     
             y += 1
             print "\r Status ___________ %f" %(y/x * 100) + "%",
