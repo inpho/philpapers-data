@@ -49,13 +49,8 @@ class fileExplorer:
 
     #SETUP Database - CouchDB and ADD JSON FILES TO COUCH 
     #path is file path of .json documents
-    def setupDB(self, path, database=None):
-        auto = None
-        if database == None: # If no database value, this is explicit run
-            auto = False
-        else:
-            auto = True
-        
+    def setupDB(self, path, database=None, username=None, password=None, host=None, auto=False):
+             
         print "Wait...\n...\n..."
         os.chdir(path) #MAKE 'path' CURRENT WORKING DIRECTORY
         
@@ -64,12 +59,11 @@ class fileExplorer:
             x += 1  
         print "\nItems in directory: " + str(x) + "\n"
 
-        username = raw_input("Enter username (Hit Enter if none): ")
-        password = raw_input("Enter password (Hit Enter if none): ")
-        host = raw_input("Enter host (Hit Enter if local): ")
-        if not host == "":
+        if not host == None and not username == None:
             couch = couchdb.Server("http://"+username+":"+password+"@"+host+":5984")
-        if username == "" and password == "":
+        elif not host == None:
+            couch = couchdb.Server("http://"+host+":5984")
+        elif username == None and password == None:
             couch = couchdb.Server()
         else:
             couch = couchdb.Server("http://"+username+":"+password+"@127.0.0.1:5984")
@@ -80,8 +74,6 @@ class fileExplorer:
             if response != "y":
                 return;
 
-        if database == None:
-            database = raw_input("Enter Database: ")
         if database in couch: #Checks if entered db exists on server
             db = couch[database]
         else:
@@ -103,8 +95,11 @@ class fileExplorer:
         for file in iglob("*.json"): #Only worries about .json files
             # Load file as json, add _id element, add file to couchdb
             with open(file) as temp: #File is automatically CLOSED with 'with'
-                document = json.load(temp)
-                id = document.get("id") 
+                try:
+                    document = json.load(temp)
+                except AttributeError:
+                    document = json.loads(temp)
+                id = document.get("id") #THIS PROGRAM ASSUMES jSON HAS id FIELD!
                 document["_id"] = id #Set Document _id field
                 if id in db: # Check if file is already in database
                     if lastSync < datetime.datetime.fromtimestamp(os.path.getmtime(file)):
@@ -124,15 +119,15 @@ class fileExplorer:
 
         self.updateLastSync(path) # UPDATE TIME OF LAST SYNC
 
-    def directoryDelve(self, path, database):
+    def directoryDelve(self, path, database, username, password, host, auto):
         """Search through a given directory and all internal directories for 
             .json documents and copy them to specified database"""
         
         for thing in iglob(os.path.join(path, "*")):
             if os.path.isdir(thing):
-                self.directoryDelve(thing, database)
+                self.directoryDelve(thing, database, username, password, host, auto)
 
-        self.setupDB(path, database=database)
+        self.setupDB(path, database=database, username=username, password=password, host=host, auto=auto)
 
 
     def getNumFiles(self, path):
@@ -196,16 +191,26 @@ if __name__ == "__main__":
     if args.auto:
         data_path = "/var/inphosemantics/data/20130522/philpapers/raw"
         database = "philpapers"
-        fileEx.setupDB(data_path, database=database)
+        fileEx.setupDB(data_path, database=database, username=None, password=None, host=None, auto=True)
     else:
         data_path = fileEx.getFileFolder()
+        host = raw_input("Enter CouchDB host (Hit Enter if local): ")
+        if host == "":
+            host = None
+        username = raw_input("Enter CouchDB username (Hit Enter if none): ")
+        if username == "":
+            username = None
+        password = raw_input("Enter CouchDB password (Hit Enter if none): ")
+        if password == "":
+            password = None
+
+        database = raw_input("Enter CouchDB databse to write .json files to: ")
 
     if args.explicit:
-        fileEx.setupDB(data_path)
+        fileEx.setupDB(data_path, database=database, username=username, password=password, host=host, auto=False)
 
     if args.tree:
-        database = raw_input("Enter database to write .json files to: ")
-        fileEx.directoryDelve(data_path, database)
+        fileEx.directoryDelve(data_path, database, username, password, host, True)
 
     # print the number of files
     if args.numFiles:
