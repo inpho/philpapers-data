@@ -13,3 +13,5 @@ fileExplorer - Used to add philpapers on inphodata to local couchdb on 1/30/2014
 2/17/2014 - fileExplorer updated - Added argparse functionality!
 
 3/14/2014 - fileExplorer updated - Cleaned up, able to descend file trees, new authentication ability for CouchDB Databases.
+
+3/26/2014 - Fixed AttributeError issue with fileExplorer by adding json import to if __name__ == "__main__" section

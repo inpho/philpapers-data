@@ -95,10 +95,7 @@ class fileExplorer:
         for file in iglob("*.json"): #Only worries about .json files
             # Load file as json, add _id element, add file to couchdb
             with open(file) as temp: #File is automatically CLOSED with 'with'
-                try:
-                    document = json.load(temp)
-                except AttributeError:
-                    document = json.loads(temp)
+                document = json.load(temp)
                 id = document.get("id") #THIS PROGRAM ASSUMES jSON HAS id FIELD!
                 document["_id"] = id #Set Document _id field
                 if id in db: # Check if file is already in database
@@ -163,6 +160,7 @@ class fileExplorer:
 
 if __name__ == "__main__":
     import argparse
+    import json
 
     parser = argparse.ArgumentParser(description="""
         Transfer and/or update JSON files from select directory into select CouchDB
