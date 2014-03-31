@@ -10,12 +10,11 @@ import os.path
 import sys
 
 import couchdb
-from couchdb import *
 
 #import webbrowser
 #import Tkinter, tkFileDialog as tk
 
-class fileExplorer:
+class fileExplorer(object):
 #    Class that represents a file folder containing JSON documents
 
     fileFolder = None #Path of file folder
@@ -160,7 +159,6 @@ class fileExplorer:
 
 if __name__ == "__main__":
     import argparse
-    import json
 
     parser = argparse.ArgumentParser(description="""
         Transfer and/or update JSON files from select directory into select CouchDB
@@ -226,9 +224,6 @@ if __name__ == "__main__":
             print "No lastSync.txt file in %s" %data_path
         else:
             print "%s last synced " %data_path + str(lastSync)
-    
-    if not len(sys.argv) > 1:
-        print "Proper argument not given."
 
     print "Complete."
 
