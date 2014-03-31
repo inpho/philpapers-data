@@ -163,32 +163,30 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="""
         Transfer and/or update JSON files from select directory into select CouchDB
         database.""")
-    parser.add_argument("-e", "--explicit", action="store_true", 
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("-e", "--explicit", action="store_true", 
         help="Use to explicity choose directory and database")
-    parser.add_argument("-a", "--auto", action="store_true", 
+    group.add_argument("-a", "--auto", action="store_true",
         help="Use for automated delivery of philpapers to philpapers database")
-    parser.add_argument("-t", "--tree", action="store_true",
+    group.add_argument("-t", "--tree", action="store_true",
         help="Use to deliver all .json files within a directory and its internal directories to a specified database")
-    parser.add_argument("-nf", "--numFiles", action="store_true", 
+    group.add_argument("-nf", "--numFiles", action="store_true", 
         help="Print the number of items within a specified directory")
-    parser.add_argument("-nj", "--numJson", action="store_true", 
+    group.add_argument("-nj", "--numJson", action="store_true", 
         help="Print the number of JSON files within a specified directory")
-    parser.add_argument("-pf", "--printFiles", action="store_true", 
+    group.add_argument("-pf", "--printFiles", action="store_true", 
         help="Print the names of items within a specified directory")
-    parser.add_argument("-ls", "--lastSync", action="store_true", 
+    group.add_argument("-ls", "--lastSync", action="store_true", 
         help="Print the time when directory was last synced with database or false if none")
     args = parser.parse_args()
+
     
     print "\nHello. Prepare to move jSON files from one directory to a couchDB database!"
     print "...\n"
-    
+
     fileEx = fileExplorer() #Create instance of fileExplorer
     
-    if args.auto:
-        data_path = "/var/inphosemantics/data/20130522/philpapers/raw"
-        database = "philpapers"
-        fileEx.setupDB(data_path, database=database, username=None, password=None, host=None, auto=True)
-    else:
+    if args.explicit or args.tree:
         data_path = fileEx.getFileFolder()
         host = raw_input("Enter CouchDB host (Hit Enter if local): ")
         if host == "":
@@ -224,6 +222,11 @@ if __name__ == "__main__":
             print "No lastSync.txt file in %s" %data_path
         else:
             print "%s last synced " %data_path + str(lastSync)
+
+    if args.auto: #Run auto code
+        data_path = "/var/inphosemantics/data/20130522/philpapers/raw"
+        database = "philpapers"
+        fileEx.setupDB(data_path, database=database, username=None, password=None, host=None, auto=True)
 
     print "Complete."
 
