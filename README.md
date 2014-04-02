@@ -17,3 +17,5 @@ fileExplorer - Used to add philpapers on inphodata to local couchdb on 1/30/2014
 3/26/2014 - Fixed AttributeError issue with fileExplorer by adding json import to if __name__ == "__main__" section
 3/26/2014 - Also adjusted code to handle json docs without 'id' field - Needs to be fixed!
 
+4/2/2014 - fileExplorer updated - Improved Command Line Control, see "fileExplorer.py -h" for more information
+
