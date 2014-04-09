@@ -19,3 +19,5 @@ fileExplorer - Used to add philpapers on inphodata to local couchdb on 1/30/2014
 
 4/2/2014 - fileExplorer updated - Improved Command Line Control, see "fileExplorer.py -h" for more information
 
+4/9/2-14 - fileExplorer updated - More efficient opening of CouchDB and directoryDelve()
+

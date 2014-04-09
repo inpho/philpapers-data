@@ -45,19 +45,19 @@ class fileExplorer(object):
         with open(lastSyncFile, "w+") as file:
             file.write(str(datetime.datetime.now())) #Write Current time to file - overwrite any current time or contents
 
-    #SETUP Database - CouchDB and ADD JSON FILES TO COUCH 
+    #SETUP Database - CouchDB    
     #path is file path of .json documents
     def setupDB(self, path, database=None, username=None, password=None, host=None, auto=False, silent=False):
         
         if not silent:             
             print "Wait...\n...\n..."
-        os.chdir(path) #MAKE 'path' CURRENT WORKING DIRECTORY
+#        os.chdir(path) #MAKE 'path' CURRENT WORKING DIRECTORY
         
-        x = 0
-        for file in iglob("*.*"):
-            x += 1  
-        if not silent:
-            print "\nItems in directory: " + str(x) + "\n"
+#        x = 0
+#        for file in iglob("*.*"):
+#            x += 1  
+#        if not silent:
+#            print "\nItems in directory: " + str(x) + "\n"
 
         if not username == None:
             couch = couchdb.Server("http://"+username+":"+password+"@"+host)
@@ -78,23 +78,31 @@ class fileExplorer(object):
                 db = couch.create(database)
             except couchdb.Unauthorized:
                 sys.exit("No or improper credentials given.")
+        
         if not silent:
             print database + " database opened.\n"
-        
-        #CHECK IF READY TO CONTINUE if an explicit run
+            #CHECK IF READY TO CONTINUE if an explicit run
         if auto == False:
             response = raw_input("Continue <y/n> ")
             if response != "y":
                 return;
+        print "\nAdding files to " + database + "\n"
 
-        if not silent:
-            print "\nAdding files to " + database + "\n"
+        return db
+
+    def fillDB(self, path, db, silent=False):
+        """Copy JSON files from given 'path' to given couchDB db"""
+        # DB refers to instance of CouchDB database
+
         # Add json files to couchDB db --------->
+
+        os.chdir(path) #MAKE 'path' CURRENT WORKING DIRECTORY
 
         #FIRST: obtain time of last update
         lastSync = self.getLastSync(path)
 #        y = 0
         for file in iglob("*.json"): #Only worries about .json files
+            skip=False
             # Load file as json, add _id element, add file to couchdb
             with open(file) as temp: #File is automatically CLOSED with 'with'
                 document = json.load(temp)
@@ -103,14 +111,16 @@ class fileExplorer(object):
                     document["_id"] = id #Set Document _id field
                     if id in db: # Check if file is already in database
                         if lastSync < datetime.datetime.fromtimestamp(os.path.getmtime(file)):
-    #                       del db[id] # Delete existing doc in database
-                            document["_rev"] = db[document["_id"]].get("_rev") # Pull _rev 
-                           #from existing doc on db and add it to updated doc to avoid conflict error
-
-                try:
-                    db.save(document)
-                except couchdb.Unauthorized:
-                    sys.exit("No or improper credentials given.")
+                            #del db[id] # Delete existing doc in database
+                            document["_rev"] = db[document["_id"]].get("_rev") 
+                            # Pull _rev from existing doc on db and add it to updated doc to avoid conflict error
+                        else:
+                            skip=True
+                if not skip:
+                    try:
+                        db.save(document)
+                    except couchdb.Unauthorized:
+                        sys.exit("No or improper credentials given.")
                     
 #            y += 1
 #            print "\r Status ___________ %f" %(y/x * 100) + "%",
@@ -122,15 +132,17 @@ class fileExplorer(object):
 
         self.updateLastSync(path) # UPDATE TIME OF LAST SYNC
 
-    def directoryDelve(self, path, database, username, password, host, auto, silent):
+    def directoryDelve(self, path, cdb, silent, explicit):
         """Search through a given directory and all internal directories for 
             .json documents and copy them to specified database"""
-        
-        for thing in iglob(os.path.join(path, "*")):
-            if os.path.isdir(thing):
-                self.directoryDelve(thing, database, username, password, host, auto, silent)
 
-        self.setupDB(path, database=database, username=username, password=password, host=host, auto=auto, silent=silent)
+        self.fillDB(path, cdb, silent=silent)
+
+        if not explicit: # Remember, explicit means only given directory is of any
+                         # concern, subdirectories are not searched.
+            for thing in iglob(os.path.join(path, "*")):
+                if os.path.isdir(thing):
+                    self.directoryDelve(path, cdb, silent, explicit)
 
 
     def getNumFiles(self, path):
@@ -230,14 +242,19 @@ if __name__ == "__main__":
 
     if args.mode == "loud":
         print "sweet."
-        fileEx.directoryDelve(data_path, database, username, password, host, True, False)
+        # cdb is the CouchDB database to be modified/created/filled
+        cdb = fileEx.setupDB(path, database=database, username=username, password=password, host=host, auto=auto, silent=silent)
+        fileEx.directoryDelve(data_path, cdb, False, False)
 
     if args.mode == "quiet":
         print "..."
-        fileEx.directoryDelve(data_path, database, username, password, host, True, True)
+        # cdb is the CouchDB database to be modified/created/filled
+        cdb = fileEx.setupDB(path, database=database, username=username, password=password, host=host, auto=auto, silent=silent)
+        fileEx.directoryDelve(data_path, cdb, True, False)
 
     if args.mode == "explicit":
-        fileEx.setupDB(data_path, database=database, username=username, password=password, host=host, auto=False, silent=False)
+        cdb = fileEx.setupDB(data_path, database=database, username=username, password=password, host=host, auto=False, silent=False)
+        fileEx.directoryDelve(data_path, cdb, False, True)
 
 #    if args.auto: #Run auto code
 #        data_path = "/var/inphosemantics/data/20130522/philpapers/raw"
