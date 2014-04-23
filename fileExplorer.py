@@ -142,7 +142,7 @@ class fileExplorer(object):
                          # concern, subdirectories are not searched.
             for thing in iglob(os.path.join(path, "*")):
                 if os.path.isdir(thing):
-                    self.directoryDelve(path, cdb, silent, explicit)
+                    self.directoryDelve(os.path.join(path, thing), cdb, silent, explicit)
 
 
     def getNumFiles(self, path):
